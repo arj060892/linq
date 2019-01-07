@@ -15,36 +15,84 @@ namespace Lin1_2
             var manufacturers = ProcessManufacturers("manufacturers.csv");
 
             var query =
-                 from m in manufacturers
-                 join c in cars on m.Name equals c.Manufacturer
-                     into carGroup
-                 select new
-                 {
-                     man = m,
-                     cars = carGroup
-                 } into result
-                 orderby result.man.Headquarters
-                 group result by result.man.Headquarters;
-
-
-            var query2 =
-                manufacturers.GroupJoin(cars, m => m.Name, c => c.Manufacturer,
-                (m, g) => new
+                from car in cars
+                group car by car.Manufacturer into carGroup
+                select new
                 {
-                    man = m,
-                    cars = g
-                }).GroupBy(m => m.man.Headquarters);
+                    Name = carGroup.Key,
+                    Max = carGroup.Max(c => c.Combined),
+                    Min = carGroup.Min(c => c.Combined),
+                    Avg = carGroup.Average(c => c.Combined)
+                } into result
+                orderby result.Name ascending, result.Max descending
+                select result;
 
 
-            foreach (var group in query)
+            var query2 = cars.GroupBy(c => c.Manufacturer).
+                Select(g =>
+                {
+                    var results = g.Aggregate(new CarStatics(),
+                        (acc, c) => acc.Accumulate(c),
+                        acc => acc.Compute()
+                        );
+                    return new
+                    {
+                        Name = g.Key,
+                        Max = results.Max,
+                        Min = results.Min,
+                        Avg = results.Average
+                    };
+                })
+                .OrderByDescending(r => r.Max);
+
+
+            foreach (var item in query)
             {
-                Console.WriteLine($"{group.Key}");
-                foreach (var car in group.SelectMany(c=>c.cars)
-                    .OrderByDescending(c=>c.Combined).Take(3))
-                {
-                    Console.WriteLine($"\t{car.Name} : {car.Combined}");
-                }
+                Console.WriteLine($"{item.Name}");
+                Console.WriteLine($"\t{item.Min}");
+                Console.WriteLine($"\t{item.Max}");
+                Console.WriteLine($"\t{item.Avg}");
             }
+
+
+
+
+
+
+
+
+
+            //var query =
+            //     from m in manufacturers
+            //     join c in cars on m.Name equals c.Manufacturer
+            //         into carGroup
+            //     select new
+            //     {
+            //         man = m,
+            //         cars = carGroup
+            //     } into result
+            //     orderby result.man.Headquarters
+            //     group result by result.man.Headquarters;
+
+
+            //var query2 =
+            //    manufacturers.GroupJoin(cars, m => m.Name, c => c.Manufacturer,
+            //    (m, g) => new
+            //    {
+            //        man = m,
+            //        cars = g
+            //    }).GroupBy(m => m.man.Headquarters);
+
+
+            //foreach (var group in query)
+            //{
+            //    Console.WriteLine($"{group.Key}");
+            //    foreach (var car in group.SelectMany(c=>c.cars)
+            //        .OrderByDescending(c=>c.Combined).Take(3))
+            //    {
+            //        Console.WriteLine($"\t{car.Name} : {car.Combined}");
+            //    }
+            //}
 
 
 
@@ -96,9 +144,9 @@ namespace Lin1_2
             //            group car by car.Manufacturer into man
             //            orderby man.Key
             //            select man;
-            var query2 =
-                    cars.GroupBy(c => c.Manufacturer.ToUpper())
-                    .OrderBy(c => c.Key);
+            //var query2 =
+            //        cars.GroupBy(c => c.Manufacturer.ToUpper())
+            //        .OrderBy(c => c.Key);
 
 
             //foreach (var result in query.OrderByDescending(c=>c.Count()))
@@ -205,6 +253,35 @@ namespace Lin1_2
             //        select Car.ParseFromCsv(l)).ToList();
         }
     }
+
+    public class CarStatics
+    {
+        public int Max { get; set; }
+        public int Min { get; set; }
+        public double Average { get; set; }
+        public int Total { get; set; }
+        public int Count { get; set; }
+        public CarStatics()
+        {
+            Max = Int32.MinValue;
+            Min = Int32.MaxValue;
+        }
+        internal CarStatics Accumulate(Car c)
+        {
+            Total += c.Combined;
+            Count++;
+            Max = Math.Max(Max, c.Combined);
+            Min = Math.Min(Min, c.Combined);
+            return this;
+        }
+
+        internal CarStatics Compute()
+        {
+            Average = Total / Count;
+            return this;
+        }
+    }
+
     public static class CarExtensions
     {
         public static IEnumerable<Car> ToCar(this IEnumerable<string> source)
