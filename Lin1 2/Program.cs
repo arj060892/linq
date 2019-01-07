@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -11,48 +12,60 @@ namespace Lin1_2
     {
         static void Main(string[] args)
         {
-            var cars = ProcessCars("fuel.csv");
-            var manufacturers = ProcessManufacturers("manufacturers.csv");
-
-            var query =
-                from car in cars
-                group car by car.Manufacturer into carGroup
-                select new
-                {
-                    Name = carGroup.Key,
-                    Max = carGroup.Max(c => c.Combined),
-                    Min = carGroup.Min(c => c.Combined),
-                    Avg = carGroup.Average(c => c.Combined)
-                } into result
-                orderby result.Name ascending, result.Max descending
-                select result;
+            Database.SetInitializer(new DropCreateDatabaseIfModelChanges<CarDb>());
+            InsertData();
+            //QueryDate();
 
 
-            var query2 = cars.GroupBy(c => c.Manufacturer).
-                Select(g =>
-                {
-                    var results = g.Aggregate(new CarStatics(),
-                        (acc, c) => acc.Accumulate(c),
-                        acc => acc.Compute()
-                        );
-                    return new
-                    {
-                        Name = g.Key,
-                        Max = results.Max,
-                        Min = results.Min,
-                        Avg = results.Average
-                    };
-                })
-                .OrderByDescending(r => r.Max);
 
 
-            foreach (var item in query)
-            {
-                Console.WriteLine($"{item.Name}");
-                Console.WriteLine($"\t{item.Min}");
-                Console.WriteLine($"\t{item.Max}");
-                Console.WriteLine($"\t{item.Avg}");
-            }
+
+
+
+
+
+            //var cars = ProcessCars("fuel.csv");
+            //var manufacturers = ProcessManufacturers("manufacturers.csv");
+
+            //var query =
+            //    from car in cars
+            //    group car by car.Manufacturer into carGroup
+            //    select new
+            //    {
+            //        Name = carGroup.Key,
+            //        Max = carGroup.Max(c => c.Combined),
+            //        Min = carGroup.Min(c => c.Combined),
+            //        Avg = carGroup.Average(c => c.Combined)
+            //    } into result
+            //    orderby result.Name ascending, result.Max descending
+            //    select result;
+
+
+            //var query2 = cars.GroupBy(c => c.Manufacturer).
+            //    Select(g =>
+            //    {
+            //        var results = g.Aggregate(new CarStatics(),
+            //            (acc, c) => acc.Accumulate(c),
+            //            acc => acc.Compute()
+            //            );
+            //        return new
+            //        {
+            //            Name = g.Key,
+            //            Max = results.Max,
+            //            Min = results.Min,
+            //            Avg = results.Average
+            //        };
+            //    })
+            //    .OrderByDescending(r => r.Max);
+
+
+            //foreach (var item in query)
+            //{
+            //    Console.WriteLine($"{item.Name}");
+            //    Console.WriteLine($"\t{item.Min}");
+            //    Console.WriteLine($"\t{item.Max}");
+            //    Console.WriteLine($"\t{item.Avg}");
+            //}
 
 
 
@@ -225,6 +238,26 @@ namespace Lin1_2
             //    Console.WriteLine($"{item.Key} + {item.Count()}");
             //}
 
+        }
+
+        private static void QueryDate()
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void InsertData()
+        {
+            var cars = ProcessCars("fuel.csv");
+            var db = new CarDb();
+
+            if (!db.Cars.Any())
+            {
+                foreach (var car in cars)
+                {
+                    db.Cars.Add(car);
+                }
+                db.SaveChanges();
+            }
         }
 
         public static List<Manufacturer> ProcessManufacturers(string path)
