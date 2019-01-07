@@ -13,46 +13,155 @@ namespace Lin1_2
         {
             var cars = ProcessCars("fuel.csv");
             var manufacturers = ProcessManufacturers("manufacturers.csv");
-            //var query = cars.OrderByDescending(c => c.Combined)
-            //    .ThenBy(c=>c.Name);
+
+            var query =
+                 from m in manufacturers
+                 join c in cars on m.Name equals c.Manufacturer
+                     into carGroup
+                 select new
+                 {
+                     man = m,
+                     cars = carGroup
+                 } into result
+                 orderby result.man.Headquarters
+                 group result by result.man.Headquarters;
 
 
-
-            //where c.Manufacturer == "BMW" && c.Year == 2016
-
-            var query = from c in cars
-                        join m in manufacturers on c.Manufacturer equals m.Name
-                        orderby c.Combined descending, c.Name ascending
-                        select new
-                        {
-                            m.Headquarters,
-                            c.Name,
-                            c.Combined
-                        };
-
-            var query2 = cars
-                .Join(manufacturers,
-                c => c.Manufacturer,
-                m => m.Name,
-                (c, m) => new
+            var query2 =
+                manufacturers.GroupJoin(cars, m => m.Name, c => c.Manufacturer,
+                (m, g) => new
                 {
-                    m.Headquarters,
-                    c.Name,
-                    c.Combined
-                }).OrderByDescending(c => c.Combined)
-            .ThenBy(c => c.Name);
+                    man = m,
+                    cars = g
+                }).GroupBy(m => m.man.Headquarters);
 
-            foreach (var item in query2.Take(10))
+
+            foreach (var group in query)
             {
-                Console.WriteLine($"{item.Headquarters} {item.Name} {item.Combined}");
+                Console.WriteLine($"{group.Key}");
+                foreach (var car in group.SelectMany(c=>c.cars)
+                    .OrderByDescending(c=>c.Combined).Take(3))
+                {
+                    Console.WriteLine($"\t{car.Name} : {car.Combined}");
+                }
             }
 
 
 
-            var top = cars.OrderByDescending(c => c.Combined)
-                .ThenBy(c => c.Name)
-                .Select(c => c)
-                .First(c => c.Manufacturer == "BMW");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            //var query = from manu in manufacturers
+            //            join car in cars on manu.Name equals car.Manufacturer
+            //            into carGroup
+            //            orderby manu.Name
+            //            select new
+            //            {
+            //                Manf = manu,
+            //                Carss = carGroup
+            //            };
+            //var query2 = manufacturers.GroupJoin(cars, m => m.Name, c => c.Manufacturer, (m, g) =>
+            //new
+            //{
+            //    Manf = m,
+            //    Carss = g
+            //}).OrderBy(m => m.Manf.Name);
+
+            //foreach (var result in query)
+            //{
+            //    Console.WriteLine($"{result.Manf.Name} : {result.Manf.Headquarters}");
+            //    foreach (var car in result.Carss.OrderByDescending(c => c.Combined).Take(2))
+            //    {
+            //        Console.WriteLine($"\t{car.Name} : {car.Combined}");
+            //    }
+
+            //}
+
+            //var query = from car in cars
+            //            group car by car.Manufacturer into man
+            //            orderby man.Key
+            //            select man;
+            var query2 =
+                    cars.GroupBy(c => c.Manufacturer.ToUpper())
+                    .OrderBy(c => c.Key);
+
+
+            //foreach (var result in query.OrderByDescending(c=>c.Count()))
+            //{
+            //    Console.WriteLine($"Name : {result.Key} : Count {result.Count()}");
+
+            //}
+            //foreach (var result in query)
+            //{
+            //    Console.WriteLine($"{result.Key} : Count {result.Count()}");
+            //    foreach (var car in result.OrderByDescending(c => c.Combined).Take(2))
+            //    {
+            //        Console.WriteLine($"\t{car.Name} : {car.Combined}");
+            //    }
+
+            //}
+
+
+
+
+
+
+
+
+
+
+            //var query = cars.OrderByDescending(c => c.Combined)
+            //    .ThenBy(c=>c.Name);
+            //where c.Manufacturer == "BMW" && c.Year == 2016
+
+            //var query = from c in cars
+            //            join m in manufacturers on new { c.Manufacturer, c.Year } equals new { Manufacturer = m.Name, m.Year }
+            //            orderby c.Combined descending, c.Name ascending
+            //            select new
+            //            {
+            //                m.Headquarters,
+            //                c.Name,
+            //                c.Combined
+            //            };
+
+            //var query2 = cars
+            //    .Join(manufacturers,
+            //    c => c.Manufacturer,
+            //    m => m.Name,
+            //    (c, m) => new
+            //    {
+            //        m.Headquarters,
+            //        c.Name,
+            //        c.Combined
+            //    }).OrderByDescending(c => c.Combined)
+            //.ThenBy(c => c.Name);
+
+            //foreach (var item in query2.Take(10))
+            //{
+            //    Console.WriteLine($"{item.Headquarters} {item.Name} {item.Combined}");
+            //}
+
+
+
+            //var top = cars.OrderByDescending(c => c.Combined)
+            //    .ThenBy(c => c.Name)
+            //    .Select(c => c)
+            //    .First(c => c.Manufacturer == "BMW");
             //Console.WriteLine(top.Name);
 
 
